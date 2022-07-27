@@ -1,0 +1,120 @@
+﻿@page "/addstudent"
+@page "/updateStudent/{StudentId:int}"
+@using WebAPIIntegreationInBlazorApp.Models
+@using WebAPIIntegreationInBlazorApp.Services
+@inject IStudentService StudentService;
+<h3>AddUpdateStudent</h3>
+
+<div class="form-group">
+    <label>First Name</label>
+    <input @bind="firstName" class="form-control" placeholder="First Name">
+</div>
+<div class="mt-2 form-group">
+    <label>Last Name</label>
+    <input @bind="lastName" class="form-control" placeholder="Last Name">
+</div>
+
+
+<div class="mt-2 form-group">
+    <label>Email address</label>
+    <input @bind="email" type="email" class="form-control" placeholder="Email">
+</div>
+
+<div class="mt-2 form-group">
+    <label>Gender</label>
+    <div class=" d-flex flex-row">
+        <div class="col-6 d-flex justify-content-between">
+            <div class="form-check">
+                <input checked="@(gender=="Male")" @onchange="@(()=> SetGender("Male"))" class="form-check-input" type="radio" name="flexRadioDefault">
+                <label class="form-check-label" for="flexRadioDefault1">
+                    Male
+                </label>
+            </div>
+            <div class="form-check">
+                <input checked="@(gender=="Female")" @onchange="@(()=> SetGender("Female"))" class="form-check-input" type="radio" name="flexRadioDefault">
+                <label class="form-check-label" for="flexRadioDefault2">
+                    Female
+                </label>
+            </div>
+        </div>
+    </div>
+</div>
+
+<button @onclick="AddUpdateStudentDetails" type="submit" class="mt-2 btn btn-primary">Submit</button>
+
+@code {
+    [Parameter]
+    public int StudentID { get; set; }
+
+
+    private string firstName;
+    private string lastName;
+    private string gender;
+    private string email;
+
+    private void SetGender(string gender)
+    {
+        this.gender = gender;
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (StudentID > 0)
+        {
+            var existingStudentDetail = await StudentService.GetStudentDetailByStudentID(StudentID);
+            if (existingStudentDetail?.StudentID > 0)
+            {
+                firstName = existingStudentDetail.FirstName;
+                lastName = existingStudentDetail.LastName;
+                gender = existingStudentDetail.Gender;
+                email = existingStudentDetail.Email;
+            }
+        }
+    }
+
+
+    private async void AddUpdateStudentDetails()
+    {
+
+        var addUpdateRequest = new AddUpdateStudentRequest
+            {
+                FirstName = firstName,
+                LastName = lastName,
+                Gender = gender,
+                Email = email,
+                StudentID = StudentID
+            };
+
+
+        if (StudentID > 0)
+        {
+            var response = await StudentService.UpdateStudent(addUpdateRequest);
+            if (response.IsSuccess)
+            {
+                await App.Current.MainPage.DisplayAlert("Record Updated", "Record Updated Successfully", "OK");
+            }
+            else
+            {
+                await App.Current.MainPage.DisplayAlert("Oops", response.ErrorMessage, "OK");
+            }
+        }
+        else
+        {
+            var response = await StudentService.AddStudent(addUpdateRequest);
+
+            if (response.IsSuccess)
+            {
+                firstName = lastName = gender = email = string.Empty;
+                this.StateHasChanged();
+
+                await App.Current.MainPage.DisplayAlert("Record Added", "Record Added Successfully", "OK");
+            }
+            else
+            {
+                await App.Current.MainPage.DisplayAlert("Oops", response.ErrorMessage, "OK");
+            }
+        }
+
+
+    }
+}
